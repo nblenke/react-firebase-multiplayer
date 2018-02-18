@@ -1,5 +1,4 @@
 import React, { Component } from 'react'
-import PropTypes from 'prop-types'
 import { compose } from 'redux'
 import { connect } from 'react-redux'
 import {
@@ -9,60 +8,98 @@ import {
   dataToJS,
   pathToJS,
 } from 'react-redux-firebase'
-import logo from './logo.svg'
-import TodoItem from './TodoItem'
 import Ship from './Ship'
 import Login from './Login'
-
+import { SHIP_SPEED } from './const'
 import './App.css'
 
 class App extends Component {
-  static propTypes = {
-    todos: PropTypes.object,
-    firebase: PropTypes.shape({
-      push: PropTypes.func.isRequired
+  constructor(props) {
+    super(props)
+
+    this.state = {
+      shipsPositioned: false,
+    }
+  }
+
+  positionShips() {
+    const { firebase, ships } = this.props
+
+    if (!ships || !this.state || this.state.shipsPositioned) {
+      return
+    }
+
+    this.setState({ shipsPositioned: true })
+
+    Object.keys(ships).forEach((key) => {
+      const { id } = ships[key]
+      firebase.update(`/ships/${id}/`, {
+        isMoving: true,
+      })
+      setTimeout(() => {
+        firebase.update(`/ships/${id}/`, {
+          isMoving: false,
+        })
+      }, SHIP_SPEED)
     })
   }
 
-  handleAdd = () => {
-    const { firebase } = this.props
-    firebase.push('/todos', { text: this.input.value, done: false })
-    // newTodo.value = ''
+  componentDidUpdate() {
+    this.positionShips()
   }
 
   handleJoin = () => {
     const { auth, firebase } = this.props
 
-    firebase.push('/ships', {
-      userUID: auth.uid,
+    firebase.pushWithMeta('/ships', {
+      isColliding: false,
+      isMoving: false,
+      isSelected: false,
+      uid: auth.uid,
       x: 10,
+      xDest: 10,
       y: 10,
+      yDest: 10,
+    }).then((ref) => {
+      const id = ref.path.o[1]
+      firebase.set(`/ships/${id}/id`, id)
     })
   }
 
-  handleClick = (ev) => {
-    // const { auth, firebase } = this.props
-    //
-    // firebase.push('/players', {
-    //   [auth.uid]: {
-    //     0: {
-    //       x: ev.screenX,
-    //       y: ev.screenY,
-    //     }
-    //   }
-    // })
+  handleBoardClick = (ev) => {
+    const { clientX, clientY } = ev
+    const {auth, firebase, ships} = this.props
+    const selectedShipIds = []
+    const xDest = clientX
+    const yDest = clientY
+
+    Object.keys(ships).forEach((key) => {
+      const {id, isSelected, uid} = ships[key]
+      if (auth.uid !== uid) {
+        return
+      }
+      isSelected && selectedShipIds.push({ id, xDest, yDest })
+    })
+
+    selectedShipIds.forEach(({ id, xDest, yDest }, index) => {
+      firebase.update(`/ships/${id}/`, {
+        isMoving: true,
+        isSelected: false,
+        xDest,
+        yDest
+      })
+      setTimeout(() => {
+        firebase.update(`/ships/${id}/`, {
+          isMoving: false,
+          x: xDest,
+          y: yDest
+        })
+      }, SHIP_SPEED)
+    })
   }
 
   render () {
-    const { ships, todos } = this.props
-    const todosList = (!isLoaded(todos))
-      ? 'Loading'
-      : (isEmpty(todos))
-        ? 'Todo list is empty'
-        : Object.keys(todos).map((key) => (
-          <TodoItem key={key} id={key} todo={todos[key]} />
-        ))
-
+    const { auth, ships } = this.props
     const shipsList = (!isLoaded(ships))
       ? 'Loading'
       : (isEmpty(ships))
@@ -74,21 +111,17 @@ class App extends Component {
     return (
       <div className='App'>
         <div className='App-todos'>
-          <h4>Todos List</h4>
-          {todosList}
-          <h4>New Todo</h4>
-          <input type='text' ref={ref => { this.input = ref }} />
-          <button onClick={this.handleAdd}>
-            Add
-          </button>
+          {isLoaded(auth) && !isEmpty(auth)? (
+            <div>
+              <button onClick={this.handleJoin}>
+                Join
+              </button>
 
-          <button onClick={this.handleJoin}>
-            Join
-          </button>
-
-          <div className="foo" onClick={this.handleClick}>
-            {shipsList}
-          </div>
+              <div className="board" onClick={this.handleBoardClick}>
+                {shipsList}
+              </div>
+            </div>
+          ) : null}
         </div>
         <Login />
       </div>
@@ -98,7 +131,8 @@ class App extends Component {
 
 export default compose(
   firebaseConnect([
-    '/todos',
+    '/auth',
+    '/users',
     '/ships'
     // { type: 'once', path: '/todos' } // for loading once instead of binding
     // '/todos#populate=owner:displayNames' // for populating owner parameter from id into string loaded from /displayNames root
@@ -109,8 +143,8 @@ export default compose(
   connect(
     ({ firebase }) => ({
       auth: pathToJS(firebase, 'auth'),
+      users: dataToJS(firebase, 'users'),
       ships: dataToJS(firebase, 'ships'),
-      todos: dataToJS(firebase, 'todos'),
     })
   )
 )(App)

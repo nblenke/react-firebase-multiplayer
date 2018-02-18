@@ -36,9 +36,13 @@ class Login extends Component {
       })
   }
 
+  googleLogout = () => {
+      this.props.firebase
+        .logout({ provider: 'google' })
+  }
+
   render () {
-    const { auth, authError } = this.props
-    const { snackCanOpen } = this.state
+    const { auth } = this.props
 
     if (!isLoaded(auth)) {
       return (
@@ -51,14 +55,14 @@ class Login extends Component {
     if (isEmpty(auth)) {
       return (
         <div>
-          <span>Login page</span>
+          <span>Log in to continue</span>
           <GoogleButton onClick={this.googleLogin} />
         </div>
       )
     }
 
     return (
-      <p>Welcome {auth.displayName}({auth.email})</p>
+      <p>Welcome {auth.displayName}({auth.email}) <span onClick={this.googleLogout}>Log Out</span></p>
     )
 
   }

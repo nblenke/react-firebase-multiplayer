@@ -1,11 +1,18 @@
 import { createStore, compose } from 'redux'
 import rootReducer from './reducer'
-import { firebase as fbConfig } from './config'
 import { reactReduxFirebase } from 'react-redux-firebase'
 
 export default function configureStore (initialState, history) {
   const createStoreWithMiddleware = compose(
-    reactReduxFirebase(fbConfig,
+    reactReduxFirebase(
+      {
+        apiKey: "AIzaSyDMfjLBn2NMXYXZzslN92PvuRk8eaebmHU",
+        authDomain: "gedev-bab52.firebaseapp.com",
+        databaseURL: "https://gedev-bab52.firebaseio.com",
+        projectId: "gedev-bab52",
+        storageBucket: "",
+        messagingSenderId: "445145672721"
+      },
       {
         userProfile: 'users', // where profiles are stored in database
         presence: 'presence', // where list of online users is stored in database

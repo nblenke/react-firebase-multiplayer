@@ -1,0 +1,22 @@
+.ship {
+  position: absolute;
+  width: 30px;
+  height: 30px;
+  border: 1px solid red;
+  border-radius: 50%;
+}
+.ship__owner {
+  font-size: 8px;
+  display: block;
+  margin: 35px 0 0;
+  text-align: center;
+}
+.ship--user {
+  border: 1px solid green;
+}
+.ship--colliding {
+  background: yellow;
+}
+.ship--selected {
+  background: green;
+}
