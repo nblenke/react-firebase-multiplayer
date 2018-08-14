@@ -8,7 +8,9 @@ import {
   dataToJS,
   pathToJS,
 } from 'react-redux-firebase'
+import classNames from 'classnames'
 import { SHIP_SPEED } from './const'
+import { lineDistance } from './utils'
 import './Ship.css'
 
 class Ship extends Component {
@@ -24,41 +26,78 @@ class Ship extends Component {
     }
   }
 
+  getPos(id, xDest, yDest) {
+    const boardEl = document.querySelector('.board')
+    const shipEl = document.querySelector(`[data-id='${id}']`)
+    const rect = shipEl.getBoundingClientRect()
+    const x = Math.round(rect.x) - boardEl.offsetLeft
+    const y = Math.round(rect.y) - boardEl.offsetTop
+
+    return {
+      start: {x, y},
+      end: {
+        x: xDest - boardEl.offsetLeft,
+        y: yDest - boardEl.offsetTop,
+      }
+    }
+  }
+
   getKeyFrames() {
-    const { ship } = this.props
-    const { id, isMoving, xDest, yDest } = ship
+    const { id, isMoving, xDest, yDest } = this.props.ship
     const shipEl = document.querySelector(`[data-id='${id}']`)
 
     if (shipEl && isMoving) {
-      const rect = shipEl.getBoundingClientRect()
+      const { start, end } = this.getPos(id, xDest, yDest)
 
       return [
-        { transform: `translate(${rect.x}px, ${rect.y}px)`},
-        { transform: `translate(${xDest}px, ${yDest}px)`},
+        { transform: `translate(${start.x}px, ${start.y}px)`},
+        { transform: `translate(${end.x}px, ${end.y}px)`},
       ]
     }
   }
 
-  getTiming(duration) {
-    return {
-      duration,
-      fill: 'forwards',
+  getTiming(speed) {
+    const { id, isMoving, xDest, yDest } = this.props.ship
+    const shipEl = document.querySelector(`[data-id='${id}']`)
+
+    if (shipEl && isMoving) {
+      const { start, end } = this.getPos(id, xDest, yDest)
+      const distance = lineDistance({x: start.x, y: start.y}, {x: end.x, y: end.y})
+      const duration = distance * 4
+
+      return {
+        duration,
+        fill: 'forwards',
+      }
+    } else {
+      return {
+        speed,
+        fill: 'forwards',
+      }
     }
   }
 
-  render(){
+  render() {
     const {auth, id, ship, users} = this.props
-    const isUser = auth.uid === ship.uid
+    const {isColliding, isSelected, uid} = ship
+    const isUser = auth.uid === uid
 
     return (
       <Animated.div
         data-id={id}
-        className={`ship${ship.isSelected ? ' ship--selected': ''}${ship.isColliding ? ' ship--colliding': ''}${isUser ? ' ship--user': ''}`}
+        className={classNames(
+          'ship',
+          {
+            'ship--user': isUser,
+            'ship--colliding': isColliding,
+            'ship--selected': isSelected,
+          }
+        )}
         keyframes={this.getKeyFrames()}
         timing={this.getTiming(SHIP_SPEED)}
         onClick={this.handleClick}>
 
-        {users && <h6 className="ship__owner">{users[ship.uid].email}</h6>}
+        {users && <h6 className="ship__owner">{users[uid].email}</h6>}
       </Animated.div>
     )
   }

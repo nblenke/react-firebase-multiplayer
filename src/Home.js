@@ -12,6 +12,7 @@ import Ship from './Ship'
 import Login from './Login'
 import { SHIP_SPEED } from './const'
 import './App.css'
+import {collides} from './utils'
 
 class App extends Component {
   constructor(props) {
@@ -41,6 +42,29 @@ class App extends Component {
           isMoving: false,
         })
       }, SHIP_SPEED)
+    })
+  }
+
+  checkForShipCollisions(id) {
+    const {firebase, ships} = this.props
+    const shipA = document.querySelector(`[data-id='${id}']`)
+
+    if (!ships) {
+      return
+    }
+
+    Object.keys(ships).forEach((key) => {
+      const shipB = document.querySelector(`[data-id='${ships[key].id}']`)
+
+      console.log('checkForShipCollisions', collides(shipA, shipB))
+
+      firebase.update(`/ships/${id}/`, {
+        isColliding: collides(shipA, shipB),
+      })
+
+      firebase.update(`/ships/${ships[key].id}/`, {
+        isColliding: collides(shipA, shipB),
+      })
     })
   }
 
@@ -94,6 +118,7 @@ class App extends Component {
           x: xDest,
           y: yDest
         })
+        this.checkForShipCollisions(id)
       }, SHIP_SPEED)
     })
   }
