@@ -10,9 +10,9 @@ import {
 } from 'react-redux-firebase'
 import Ship from './Ship'
 import Login from './Login'
-import { SHIP_SPEED } from './const'
 import './App.css'
-import {collides} from './utils'
+import { setShipIsMoving } from './utils'
+import { SHIP_WIDTH } from './const'
 
 class App extends Component {
   constructor(props) {
@@ -34,37 +34,11 @@ class App extends Component {
 
     Object.keys(ships).forEach((key) => {
       const { id } = ships[key]
-      firebase.update(`/ships/${id}/`, {
-        isMoving: true,
-      })
+      setShipIsMoving(firebase, id, true)
+
       setTimeout(() => {
-        firebase.update(`/ships/${id}/`, {
-          isMoving: false,
-        })
-      }, SHIP_SPEED)
-    })
-  }
-
-  checkForShipCollisions(id) {
-    const {firebase, ships} = this.props
-    const shipA = document.querySelector(`[data-id='${id}']`)
-
-    if (!ships) {
-      return
-    }
-
-    Object.keys(ships).forEach((key) => {
-      const shipB = document.querySelector(`[data-id='${ships[key].id}']`)
-
-      console.log('checkForShipCollisions', collides(shipA, shipB))
-
-      firebase.update(`/ships/${id}/`, {
-        isColliding: collides(shipA, shipB),
-      })
-
-      firebase.update(`/ships/${ships[key].id}/`, {
-        isColliding: collides(shipA, shipB),
-      })
+        setShipIsMoving(firebase, id, false)
+      }, 0)
     })
   }
 
@@ -94,8 +68,8 @@ class App extends Component {
     const { clientX, clientY } = ev
     const {auth, firebase, ships} = this.props
     const selectedShipIds = []
-    const xDest = clientX
-    const yDest = clientY
+    const xDest = clientX - (SHIP_WIDTH / 2)
+    const yDest = clientY - (SHIP_WIDTH / 2)
 
     Object.keys(ships).forEach((key) => {
       const {id, isSelected, uid} = ships[key]
@@ -114,12 +88,10 @@ class App extends Component {
       })
       setTimeout(() => {
         firebase.update(`/ships/${id}/`, {
-          isMoving: false,
           x: xDest,
           y: yDest
         })
-        this.checkForShipCollisions(id)
-      }, SHIP_SPEED)
+      }, 10)
     })
   }
 

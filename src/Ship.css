@@ -1,14 +1,11 @@
 .ship {
   position: absolute;
-  width: 30px;
-  height: 30px;
   border: 1px solid red;
   border-radius: 50%;
 }
 .ship__owner {
+  color: rgba(0, 0, 0, 0.6);
   font-size: 8px;
-  display: block;
-  margin: 35px 0 0;
   text-align: center;
 }
 .ship--user {
@@ -19,4 +16,7 @@
 }
 .ship--selected {
   background: green;
+}
+.ship--selected .ship__owner {
+  color: #222;
 }

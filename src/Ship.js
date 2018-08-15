@@ -9,8 +9,8 @@ import {
   pathToJS,
 } from 'react-redux-firebase'
 import classNames from 'classnames'
-import { SHIP_SPEED } from './const'
-import { lineDistance } from './utils'
+import { SHIP_SPEED, SHIP_WIDTH } from './const'
+import { lineDistance, setShipIsMoving, setShipCollisions } from './utils'
 import './Ship.css'
 
 class Ship extends Component {
@@ -65,6 +65,11 @@ class Ship extends Component {
       const distance = lineDistance({x: start.x, y: start.y}, {x: end.x, y: end.y})
       const duration = distance * 4
 
+      setTimeout(() => {
+        setShipIsMoving(this.props.firebase, id, false)
+        setShipCollisions(this.props)
+      }, duration)
+
       return {
         duration,
         fill: 'forwards',
@@ -85,6 +90,10 @@ class Ship extends Component {
     return (
       <Animated.div
         data-id={id}
+        style={{
+          width: SHIP_WIDTH,
+          height: SHIP_WIDTH,
+        }}
         className={classNames(
           'ship',
           {
@@ -97,7 +106,16 @@ class Ship extends Component {
         timing={this.getTiming(SHIP_SPEED)}
         onClick={this.handleClick}>
 
-        {users && <h6 className="ship__owner">{users[uid].email}</h6>}
+        {users &&
+          <p
+            className="ship__owner"
+            style={{
+              margin: `${SHIP_WIDTH*1.2}px 0 0 -50%`,
+            }}
+          >
+            {users[uid].email}
+          </p>
+        }
       </Animated.div>
     )
   }
