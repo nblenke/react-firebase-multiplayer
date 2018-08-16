@@ -1,4 +1,4 @@
-import { SHIP_COLLISION_BUFFER, TICK_DELAY } from './const'
+import { TICK_DELAY } from './const'
 
 export const collides = (a, b, buff = 0) => {
   const rect1 = a.getBoundingClientRect()
@@ -52,25 +52,4 @@ export const shipRect = id => document.querySelector(`[data-id='${id}']`).getBou
 
 export const setShipIsMoving = (firebase, id, isMoving) => {
   firebase.update(`/ships/${id}/`, {isMoving})
-}
-
-export const setShipCollisions = (props) => {
-  const {firebase, ships} = props
-  const collisionIds = []
-
-  Object.keys(ships).forEach((key) => {
-    const {id} = ships[key]
-    const ship = document.querySelector(`[data-id='${id}']`)
-    const otherShips = document.querySelectorAll(`.ship:not([data-id='${id}'])`)
-
-    otherShips.forEach((otherShip) => {
-      collides(ship, otherShip, SHIP_COLLISION_BUFFER) && collisionIds.push(otherShip.dataset.id)
-    })
-
-    firebase.update(`/ships/${id}/`, { isColliding: false })
-  })
-
-  collisionIds.forEach((collisionId) => {
-    firebase.update(`/ships/${collisionId}/`, { isColliding: true })
-  })
 }

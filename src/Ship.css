@@ -4,9 +4,14 @@
   border-radius: 50%;
 }
 .ship__owner {
+  display: block;
   color: rgba(0, 0, 0, 0.6);
   font-size: 8px;
   text-align: center;
+  width: 60px;
+  text-overflow: ellipsis;
+  overflow: hidden;
+  padding: 4px;
 }
 .ship--user {
   border: 1px solid green;
@@ -19,4 +24,5 @@
 }
 .ship--selected .ship__owner {
   color: #222;
+  background: rgba(0, 0, 0, 0.1);
 }

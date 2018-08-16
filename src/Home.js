@@ -12,7 +12,7 @@ import Ship from './Ship'
 import Login from './Login'
 import './App.css'
 import { setShipIsMoving } from './utils'
-import { SHIP_WIDTH } from './const'
+import { BOARD_WIDTH, BOARD_HEIGHT, SHIP_WIDTH } from './const'
 
 class App extends Component {
   constructor(props) {
@@ -65,11 +65,12 @@ class App extends Component {
   }
 
   handleBoardClick = (ev) => {
-    const { clientX, clientY } = ev
     const {auth, firebase, ships} = this.props
     const selectedShipIds = []
-    const xDest = clientX - (SHIP_WIDTH / 2)
-    const yDest = clientY - (SHIP_WIDTH / 2)
+    const board = document.querySelector('.board')
+    const rect = board.getBoundingClientRect();
+    const xDest = ev.clientX - rect.left - (SHIP_WIDTH / 2)
+    const yDest = ev.clientY - rect.top - (SHIP_WIDTH / 2)
 
     Object.keys(ships).forEach((key) => {
       const {id, isSelected, uid} = ships[key]
@@ -86,12 +87,6 @@ class App extends Component {
         xDest,
         yDest
       })
-      setTimeout(() => {
-        firebase.update(`/ships/${id}/`, {
-          x: xDest,
-          y: yDest
-        })
-      }, 10)
     })
   }
 
@@ -106,20 +101,31 @@ class App extends Component {
         ))
 
     return (
-      <div className='App'>
-        <div className='App-todos'>
+      <div>
+        <div>
           {isLoaded(auth) && !isEmpty(auth)? (
             <div>
               <button onClick={this.handleJoin}>
                 Join
               </button>
 
-              <div className="board" onClick={this.handleBoardClick}>
-                {shipsList}
+              <div className="outer">
+                <div
+                  className="board"
+                  style={{
+                    width: BOARD_WIDTH,
+                    height: BOARD_HEIGHT,
+                  }}
+                  onClick={this.handleBoardClick}
+                >
+                  {shipsList}
+                </div>
               </div>
+
             </div>
           ) : null}
         </div>
+
         <Login />
       </div>
     )

@@ -9,8 +9,8 @@ import {
   pathToJS,
 } from 'react-redux-firebase'
 import classNames from 'classnames'
-import { SHIP_SPEED, SHIP_WIDTH } from './const'
-import { lineDistance, setShipIsMoving, setShipCollisions } from './utils'
+import { SHIP_COLLISION_BUFFER, SHIP_SPEED, SHIP_HEIGHT, SHIP_WIDTH } from './const'
+import { collides, lineDistance, setShipIsMoving } from './utils'
 import './Ship.css'
 
 class Ship extends Component {
@@ -27,17 +27,14 @@ class Ship extends Component {
   }
 
   getPos(id, xDest, yDest) {
-    const boardEl = document.querySelector('.board')
-    const shipEl = document.querySelector(`[data-id='${id}']`)
-    const rect = shipEl.getBoundingClientRect()
-    const x = Math.round(rect.x) - boardEl.offsetLeft
-    const y = Math.round(rect.y) - boardEl.offsetTop
+    const board = document.querySelector('.board')
+    const { x, y } = this.props.ship
 
     return {
       start: {x, y},
       end: {
-        x: xDest - boardEl.offsetLeft,
-        y: yDest - boardEl.offsetTop,
+        x: xDest - board.offsetLeft,
+        y: yDest - board.offsetTop,
       }
     }
   }
@@ -56,8 +53,33 @@ class Ship extends Component {
     }
   }
 
+  setShipCollisions() {
+    const { firebase, ships } = this.props
+    const collisions = []
+
+    Object.keys(ships).forEach((key) => {
+      const {id} = ships[key]
+      const ship = document.querySelector(`[data-id='${id}']`)
+      const otherShips = document.querySelectorAll(`.ship:not([data-id='${id}'])`)
+
+      otherShips.forEach((otherShip) => {
+        collides(ship, otherShip, SHIP_COLLISION_BUFFER) &&
+          collisions.push(otherShip.dataset.id)
+      })
+
+      firebase.update(`/ships/${id}/`, { isColliding: false })
+    })
+
+    collisions.forEach((id) => {
+      firebase.update(`/ships/${id}/`, {
+        isColliding: true,
+      })
+    })
+  }
+
   getTiming(speed) {
-    const { id, isMoving, xDest, yDest } = this.props.ship
+    const { firebase, ship } = this.props
+    const { id, isMoving, xDest, yDest } = ship
     const shipEl = document.querySelector(`[data-id='${id}']`)
 
     if (shipEl && isMoving) {
@@ -66,8 +88,12 @@ class Ship extends Component {
       const duration = distance * 4
 
       setTimeout(() => {
-        setShipIsMoving(this.props.firebase, id, false)
-        setShipCollisions(this.props)
+        firebase.update(`/ships/${id}/`, {
+          x: xDest,
+          y: yDest
+        })
+        setShipIsMoving(firebase, id, false)
+        this.setShipCollisions()
       }, duration)
 
       return {
@@ -92,7 +118,7 @@ class Ship extends Component {
         data-id={id}
         style={{
           width: SHIP_WIDTH,
-          height: SHIP_WIDTH,
+          height: SHIP_HEIGHT,
         }}
         className={classNames(
           'ship',
