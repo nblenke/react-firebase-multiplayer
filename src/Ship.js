@@ -1,5 +1,4 @@
 import React, { Component } from 'react'
-import PropTypes from 'prop-types'
 import { Animated } from 'react-web-animation';
 import { compose } from 'redux'
 import { connect } from 'react-redux'
@@ -9,20 +8,16 @@ import {
   pathToJS,
 } from 'react-redux-firebase'
 import classNames from 'classnames'
-import { SHIP_COLLISION_BUFFER, SHIP_SPEED, SHIP_HEIGHT, SHIP_WIDTH } from './const'
-import { collides, lineDistance, setShipIsMoving } from './utils'
+import { SHIP_SPEED, SHIP_HEIGHT, SHIP_WIDTH } from './const'
+import { lineDistance, setShipCollisions, setShipIsMoving } from './utils'
 import './Ship.css'
 
 class Ship extends Component {
-  static propTypes = {
-    ship: PropTypes.object,
-  }
-
   handleClick = (ev) => {
-    const { auth, id, firebase, ship } = this.props
+    const { auth, gameId, firebase, id, ship } = this.props
 
     if (auth.uid === ship.uid) {
-      firebase.set(`/ships/${id}/isSelected`, !ship.isSelected)
+      firebase.set(`/games/${gameId}/ships/${id}/isSelected`, !ship.isSelected)
     }
   }
 
@@ -53,32 +48,8 @@ class Ship extends Component {
     }
   }
 
-  setShipCollisions() {
-    const { firebase, ships } = this.props
-    const collisions = []
-
-    Object.keys(ships).forEach((key) => {
-      const {id} = ships[key]
-      const ship = document.querySelector(`[data-id='${id}']`)
-      const otherShips = document.querySelectorAll(`.ship:not([data-id='${id}'])`)
-
-      otherShips.forEach((otherShip) => {
-        collides(ship, otherShip, SHIP_COLLISION_BUFFER) &&
-          collisions.push(otherShip.dataset.id)
-      })
-
-      firebase.update(`/ships/${id}/`, { isColliding: false })
-    })
-
-    collisions.forEach((id) => {
-      firebase.update(`/ships/${id}/`, {
-        isColliding: true,
-      })
-    })
-  }
-
   getTiming(speed) {
-    const { firebase, ship } = this.props
+    const { firebase, games, gameId, ship } = this.props
     const { id, isMoving, xDest, yDest } = ship
     const shipEl = document.querySelector(`[data-id='${id}']`)
 
@@ -88,12 +59,12 @@ class Ship extends Component {
       const duration = distance * 4
 
       setTimeout(() => {
-        firebase.update(`/ships/${id}/`, {
+        firebase.update(`/games/${gameId}/ships/${id}/`, {
           x: xDest,
           y: yDest
         })
-        setShipIsMoving(firebase, id, false)
-        this.setShipCollisions()
+        setShipIsMoving({ firebase, gameId, id, isMoving: false })
+        setShipCollisions(firebase, gameId, games[gameId])
       }, duration)
 
       return {
@@ -151,13 +122,13 @@ export default compose(
   firebaseConnect([
     '/auth',
     '/users',
-    '/ships'
+    '/games'
   ]),
   connect(
     ({ firebase }) => ({
       auth: pathToJS(firebase, 'auth'),
       users: dataToJS(firebase, 'users'),
-      ships: dataToJS(firebase, 'ships'),
+      games: dataToJS(firebase, 'games'),
     })
   )
 )(Ship)

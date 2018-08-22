@@ -1,4 +1,4 @@
-import { TICK_DELAY } from './const'
+import { SHIP_COLLISION_BUFFER, TICK_DELAY } from './const'
 
 export const collides = (a, b, buff = 0) => {
   const rect1 = a.getBoundingClientRect()
@@ -14,6 +14,29 @@ export const collides = (a, b, buff = 0) => {
 
 export const matrixToArray = (matrix) => matrix.substr(7, matrix.length - 8).split(', ')
 
+export const setShipCollisions = (firebase, gameId, game) => {
+  const { ships } = game
+
+  const collisions = []
+
+  Object.keys(ships).forEach((key) => {
+    const {id} = ships[key]
+    const ship = document.querySelector(`[data-id='${id}']`)
+    const otherShips = document.querySelectorAll(`.ship:not([data-id='${id}'])`)
+
+    otherShips.forEach((otherShip) => {
+      collides(ship, otherShip, SHIP_COLLISION_BUFFER) &&
+        collisions.push(otherShip.dataset.id)
+    })
+
+    firebase.update(`/games/${gameId}/ships/${id}/`, { isColliding: false })
+  })
+
+  collisions.forEach((id) => {
+    firebase.update(`/games/${gameId}/ships/${id}/`, { isColliding: true })
+  })
+}
+
 const requestAnimFrame = (() =>
   window.requestAnimationFrame ||
   window.webkitRequestAnimationFrame ||
@@ -25,11 +48,11 @@ const requestAnimFrame = (() =>
   })
 )()
 
-export const tick = callback => {
+export const tick = (callback) => {
   const tick = () => {
     setTimeout(function() {
       requestAnimFrame(tick);
-      callback()
+      callback && callback()
     }, TICK_DELAY);
   }
   tick()
@@ -50,6 +73,6 @@ export const lineDistance =  (point1, point2) => {
 
 export const shipRect = id => document.querySelector(`[data-id='${id}']`).getBoundingClientRect()
 
-export const setShipIsMoving = (firebase, id, isMoving) => {
-  firebase.update(`/ships/${id}/`, {isMoving})
+export const setShipIsMoving = ({firebase, gameId, id, isMoving}) => {
+  firebase.update(`/games/${gameId}/ships/${id}/`, {isMoving})
 }
